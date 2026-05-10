@@ -21,7 +21,6 @@ def create_session():
 
 
 def save_message(username, session_id, role, content):
-
     collection.insert_one({
         "username": username,
         "session_id": session_id,
@@ -32,7 +31,6 @@ def save_message(username, session_id, role, content):
 
 
 def load_messages(username, session_id):
-
     return list(
         collection.find(
             {"username": username, "session_id": session_id},
@@ -42,7 +40,6 @@ def load_messages(username, session_id):
 
 
 def get_sessions(username):
-
     return list(collection.aggregate([
 
         {"$match": {"username": username}},
