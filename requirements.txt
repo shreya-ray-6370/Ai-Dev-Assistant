@@ -1,6 +1,6 @@
 streamlit
 langchain-core
-langchain-ollama
+langchain-groq
 langgraph
 pymongo
 python-dotenv
