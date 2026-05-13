@@ -1,22 +1,15 @@
 from langchain_core.messages import SystemMessage
 
-from llm import llm
+from llm import llm, vision_llm
 from tools.file_tools import tools
 
 
 llm_with_tools = llm.bind_tools(tools)
 
-
 SYSTEM_PROMPT = """
 You are an expert AI Dev Assistant with deep knowledge of Python, JavaScript, TypeScript, Java, C++, JSON, and all common programming languages and file formats.
 
 You have access to tools to read uploaded files. You MUST use them.
-
-==== TOOL CALLING RULES (CRITICAL) ====
-- NEVER write tool calls as text or JSON like {"name": ..., "parameters": ...} in your response.
-- NEVER say "I will call read_uploaded_file". Just call it silently.
-- If a filename is mentioned or listed in context, ALWAYS call read_uploaded_file or the appropriate tool first before responding.
-- Only produce a text reply AFTER you have the actual file content from the tool.
 
 ==== TASK RULES ====
 
@@ -51,12 +44,21 @@ When the user wants to FIND ERRORS in a file:
 - Be precise, structured, and helpful.
 """.strip()
 
+def _has_image(messages):
+    """Check if any message in the list contains an image."""
+    for msg in messages:
+        if isinstance(msg.content, list):
+            for part in msg.content:
+                if isinstance(part, dict) and part.get("type") == "image_url":
+                    return True
+    return False
 
 def coding_assistant(state):
-    print("State in coding_assistant:", state)  # Debugging statement
-    messages = [SystemMessage(content=SYSTEM_PROMPT)] + state["messages"]
-    response = llm_with_tools.invoke(messages)
-
-    return {
-        "messages": [response]
-    }
+    # Only send last 10 messages to keep token count low
+    recent_messages = state["messages"][-10:]
+    messages = [SystemMessage(content=SYSTEM_PROMPT)] + recent_messages
+    if _has_image(recent_messages):
+        response = vision_llm.invoke(messages)
+    else:
+        response = llm_with_tools.invoke(messages)
+    return {"messages": [response]}
