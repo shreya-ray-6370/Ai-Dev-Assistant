@@ -1,7 +1,7 @@
 from langchain_core.messages import SystemMessage
 
 from services.llm import llm
-from tools.file_tools import read_uploaded_file
+from tools.debug_tools import debug_tools
 from prompts.debug_prompt import DEBUG_PROMPT
 
 
@@ -13,6 +13,7 @@ llm_with_tools = llm.bind_tools(debug_tools)
 
 
 def debug_agent(state):
+    print("Debug Agent running !")
 
     recent_messages = state["messages"][-10:]
 

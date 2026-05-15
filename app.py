@@ -103,48 +103,44 @@ if "messages" not in st.session_state:
 # =========================================
 # BUILD HUMAN MESSAGE
 # =========================================
+def build_human_message(
+    user_text,
+    uploads_dir,
+    selected_file=None
+):
 
-def build_human_message(user_text, uploads_dir):
+    content = [
+        {
+            "type": "text",
+            "text": user_text
+        }
+    ]
 
-    image_parts = []
+    if selected_file:
 
-    if uploads_dir.exists():
+        file_path = uploads_dir / selected_file
 
-        for file in uploads_dir.iterdir():
+        if (
+            file_path.exists()
+            and file_path.suffix.lower() in IMAGE_EXTENSIONS
+        ):
 
-            if file.suffix.lower() in IMAGE_EXTENSIONS:
+            with open(file_path, "rb") as f:
 
-                if file.name.lower() in user_text.lower():
+                b64 = base64.b64encode(
+                    f.read()
+                ).decode("utf-8")
 
-                    with open(file, "rb") as f:
+            mime = f"image/{file_path.suffix.lower()[1:]}"
 
-                        b64 = base64.b64encode(
-                            f.read()
-                        ).decode("utf-8")
+            content.append({
+                "type": "image_url",
+                "image_url": {
+                    "url": f"data:{mime};base64,{b64}"
+                }
+            })
 
-                    mime = f"image/{file.suffix.lower()[1:]}"
-
-                    image_parts.append({
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:{mime};base64,{b64}"
-                        }
-                    })
-
-    if image_parts:
-
-        return HumanMessage(
-            content=[
-                {
-                    "type": "text",
-                    "text": user_text
-                },
-                *image_parts
-            ]
-        )
-
-    return HumanMessage(content=user_text)
-
+    return HumanMessage(content=content)
 
 # =========================================
 # SIDEBAR
@@ -354,8 +350,9 @@ if user_input:
     selected_file = st.session_state.selected_file
 
     human_message = build_human_message(
-        user_input,
-        UPLOADS_DIR
+      user_input,
+      UPLOADS_DIR,
+      selected_file
     )
 
     st.session_state.messages.append(
@@ -375,20 +372,9 @@ if user_input:
     with st.spinner("Thinking..."):
 
         response = graph.invoke({
-
-            "messages": st.session_state.messages,
-
-            "uploaded_files": saved_files,
-
-            "selected_file": selected_file,
-
-            "task_type": None,
-
-            "active_agent": None,
-
-            "contains_image": False,
-
-            "final_response": None
+          "messages": st.session_state.messages,
+          "selected_file": selected_file,
+          "uploaded_files": saved_files
         })
 
     ai_message = None
